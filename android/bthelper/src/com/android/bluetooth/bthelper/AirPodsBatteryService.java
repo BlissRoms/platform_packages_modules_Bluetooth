@@ -98,10 +98,12 @@ public class AirPodsBatteryService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.v(TAG, "onStartCommand");
-        final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-        if (device != null) {
-            mCurrentDevice = device;
-            startScan();
+        if (intent != null) {
+            final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+            if (device != null) {
+                mCurrentDevice = device;
+                startScan();
+            }
         }
         return START_STICKY;
     }
