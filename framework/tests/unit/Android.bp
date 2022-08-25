@@ -30,4 +30,5 @@ android_test {
         "general-tests",
         "mts-bluetooth",
     ],
+    certificate: "bluetooth",
 }
