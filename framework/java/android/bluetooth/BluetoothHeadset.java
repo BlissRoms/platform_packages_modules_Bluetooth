@@ -244,7 +244,6 @@ public final class BluetoothHeadset implements BluetoothProfile {
     /**
      * A vendor-specific AT command
      *
-     * @hide
      */
     public static final String VENDOR_SPECIFIC_HEADSET_EVENT_IPHONEACCEV = "+IPHONEACCEV";
 
@@ -252,7 +251,6 @@ public final class BluetoothHeadset implements BluetoothProfile {
      * Battery level indicator associated with
      * {@link #VENDOR_SPECIFIC_HEADSET_EVENT_IPHONEACCEV}
      *
-     * @hide
      */
     public static final int VENDOR_SPECIFIC_HEADSET_EVENT_IPHONEACCEV_BATTERY_LEVEL = 1;
 

@@ -467,8 +467,6 @@ Landroid/bluetooth/BluetoothHeadset;->setAudioRouteAllowed(Z)V
 Landroid/bluetooth/BluetoothHeadset;->setForceScoAudio(Z)V
 Landroid/bluetooth/BluetoothHeadset;->TAG:Ljava/lang/String;
 Landroid/bluetooth/BluetoothHeadset;->VDBG:Z
-Landroid/bluetooth/BluetoothHeadset;->VENDOR_SPECIFIC_HEADSET_EVENT_IPHONEACCEV:Ljava/lang/String;
-Landroid/bluetooth/BluetoothHeadset;->VENDOR_SPECIFIC_HEADSET_EVENT_IPHONEACCEV_BATTERY_LEVEL:I
 Landroid/bluetooth/BluetoothHeadset;->VENDOR_SPECIFIC_HEADSET_EVENT_XAPL:Ljava/lang/String;
 Landroid/bluetooth/BluetoothHeadset;->VENDOR_SPECIFIC_HEADSET_EVENT_XEVENT:Ljava/lang/String;
 Landroid/bluetooth/BluetoothHeadset;->VENDOR_SPECIFIC_HEADSET_EVENT_XEVENT_BATTERY_LEVEL:Ljava/lang/String;
