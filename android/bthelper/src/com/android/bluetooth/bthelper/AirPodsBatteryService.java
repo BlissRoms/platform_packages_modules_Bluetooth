@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.settings.bluetooth;
+package com.android.bluetooth.bthelper;
 
 import android.Manifest;
 import android.app.Service;

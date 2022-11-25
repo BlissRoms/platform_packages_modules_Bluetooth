@@ -23,11 +23,11 @@
 
         <!-- AirPods settings -->
         <service
-            android:name=".bluetooth.AirPodsBatteryService"
+            android:name="com.android.bluetooth.bthelper.AirPodsBatteryService"
             android:exported="true" />
 
         <receiver
-            android:name=".bluetooth.AirPodsBatteryInitializer"
+            android:name="com.android.bluetooth.bthelper.AirPodsBatteryInitializer"
             android:exported="true" >
             <intent-filter>
                 <action android:name="android.bluetooth.a2dp.profile.action.CONNECTION_STATE_CHANGED" />

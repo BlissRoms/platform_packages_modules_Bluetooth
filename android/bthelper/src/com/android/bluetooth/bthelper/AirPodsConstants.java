@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.settings.bluetooth;
+package com.android.bluetooth.bthelper;
 
 import android.bluetooth.BluetoothDevice;
 import android.os.ParcelUuid;
