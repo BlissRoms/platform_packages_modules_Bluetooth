@@ -1,0 +1,37 @@
+android_app {
+    name: "BtHelper",
+    defaults: ["bluetooth-module-sdk-version-defaults"],
+
+    srcs: ["src/**/*.java"],
+
+    certificate: "platform",
+
+    jni_uses_platform_apis: true,
+    libs: [
+        "framework-bluetooth-pre-jarjar",
+        "unsupportedappusage",
+        "framework-annotations-lib",
+        "error_prone_annotations",
+    ],
+    static_libs: [
+        "androidx.core_core",
+    ],
+
+    required: [
+        "com.android.bluetooth.bthelper.xml",
+    ],
+
+    system_ext_specific: true,
+    privileged: true,
+
+    min_sdk_version: "Tiramisu",
+    sdk_version: "module_current",
+}
+
+prebuilt_etc {
+    name: "com.android.bluetooth.bthelper.xml",
+    sub_dir: "permissions",
+    src: "com.android.bluetooth.bthelper.xml",
+    filename_from_src: true,
+    system_ext_specific: true,
+}
