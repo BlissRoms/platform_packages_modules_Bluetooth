@@ -19,6 +19,7 @@ package com.android.bluetooth.bthelper;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
+import android.os.UserHandle;
 
 public class AirPodsInitializer {
 
@@ -28,11 +29,12 @@ public class AirPodsInitializer {
         }
         final Intent intent = new Intent(context, AirPodsBatteryService.class);
         intent.putExtra(BluetoothDevice.EXTRA_DEVICE, device);
-        context.startService(intent);
+        context.startServiceAsUser(intent, UserHandle.CURRENT);
     }
 
     static void stopBatteryService(Context context, BluetoothDevice device) {
-        context.stopService(new Intent(context, AirPodsBatteryService.class));
+        context.stopServiceAsUser(new Intent(context, AirPodsBatteryService.class),
+                                    UserHandle.CURRENT);
     }
 
 }

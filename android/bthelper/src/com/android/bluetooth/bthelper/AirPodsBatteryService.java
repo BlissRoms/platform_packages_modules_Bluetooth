@@ -16,43 +16,40 @@
 
 package com.android.bluetooth.bthelper;
 
-import android.Manifest;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothAssignedNumbers;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothHeadset;
+import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
 import android.bluetooth.le.ScanFilter;
 import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
+import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.Manifest;
 import android.os.IBinder;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.util.Log;
 
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
 
 public class AirPodsBatteryService extends Service {
+
+    private Context mContext;
 
     private static final String TAG = "AirPodsBatteryService";
 
     private static final int DATA_LENGTH_BATTERY = 25;
 
     private static final long REPORT_DELAY_MS = 500;
-
-    private static final int FLAG_REVERSED = 1 << 7;
-
-    private static final int MASK_CHARGING_LEFT = 1 << 5;
-    private static final int MASK_CHARGING_RIGHT = 1 << 4;
-    private static final int MASK_CHARGING_CASE = 1 << 6;
-
-    private static final int MASK_USING_LEFT = 1 << 3;
-    private static final int MASK_USING_RIGHT = 1 << 1;
 
     private BluetoothAdapter mAdapter;
     private BluetoothLeScanner mScanner;
@@ -63,6 +60,8 @@ public class AirPodsBatteryService extends Service {
     private int mBestLeRssi = -128;
     private long mBestLeLastReported = 0;
 
+    private boolean isChanged = false;
+    
     private final ScanCallback mScanCallback = new ScanCallback() {
         @Override
         public void onBatchScanResults(List<ScanResult> scanResults) {
@@ -86,6 +85,7 @@ public class AirPodsBatteryService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.v(TAG, "onCreate");
+        mContext = getApplicationContext();
     }
 
     @Override
@@ -156,12 +156,19 @@ public class AirPodsBatteryService extends Service {
     }
 
     private void handleScanResult(ScanResult result) {
+        if (result == null) {
+            return;
+        }
+
         final ScanRecord record = result.getScanRecord();
         if (record == null) {
             return;
         }
 
         final byte[] data = record.getManufacturerSpecificData(AirPodsConstants.MANUFACTURER_ID);
+        if (data == null || Arrays.asList(data).contains(null) || data.length != (2 + DATA_LENGTH_BATTERY)) {
+            return;
+        }
 
         final String address = result.getDevice().getAddress();
         final int rssi = result.getRssi();
@@ -189,52 +196,14 @@ public class AirPodsBatteryService extends Service {
                 return;
             }
         }
+        
+        AirPodsUtils.setModel(data);
 
-        final int flags = data[5];
-        final int battery = data[6];
-        final int charging = data[7];
+        AirPodsUtils.setModelData(data);
 
-        final boolean rightLeft = ((flags & FLAG_REVERSED) != 0);
-        final int batteryLeft, batteryRight;
-        final boolean chargingLeft, chargingRight;
-        if (!rightLeft) {
-            batteryLeft = (battery >> 4) & 0xf;
-            batteryRight = battery & 0xf;
-            chargingLeft = (charging & MASK_CHARGING_LEFT) != 0;
-            chargingRight = (charging & MASK_CHARGING_RIGHT) != 0;
-        } else {
-            batteryLeft = battery & 0xf;
-            batteryRight = (battery >> 4) & 0xf;
-            chargingLeft = (charging & MASK_CHARGING_RIGHT) != 0;
-            chargingRight = (charging & MASK_CHARGING_LEFT) != 0;
-        }
+        isChanged = AirPodsUtils.isModelStateChanged();
 
-        final int batteryCase = charging & 0xf;
-        final boolean chargingCase = (charging & MASK_CHARGING_CASE) != 0;
-
-        final boolean usingLeft = (flags & MASK_USING_LEFT) != 0;
-        final boolean usingRight = (flags & MASK_USING_RIGHT) != 0;
-
-        // Log.d(TAG, String.format("%s\t%s\tL: %s (%s)\tR: %s (%s)\tCASE: %s (%s)",
-        //         address, rightLeft,
-        //         batteryLeft == 0xf ? "-" : batteryLeft, usingLeft ? "USE" : chargingLeft ? "CHG" : "---",
-        //         batteryRight == 0xf ? "-" : batteryRight, usingRight ? "USE" : chargingRight ? "CHG" : "---",
-        //         batteryCase == 0xf ? "-" : batteryCase, chargingCase ? "CHG" : "---"));
-
-        int displayLevel = Math.min(batteryLeft, batteryRight);
-        if (displayLevel == 15) {
-            displayLevel = BluetoothDevice.BATTERY_LEVEL_UNKNOWN;
-        } else {
-            if (displayLevel > 0) {
-                displayLevel = displayLevel - 1; // [0, 9]
-            }
-        }
-
-        final Object[] arguments = new Object[] {
-            1, // NumberOfIndicators
-            BluetoothHeadset.VENDOR_SPECIFIC_HEADSET_EVENT_IPHONEACCEV_BATTERY_LEVEL, // IndicatorType
-            displayLevel // IndicatorValue
-        };
+        final Object[] arguments = AirPodsUtils.getModelArguments();
 
         broadcastVendorSpecificEventIntent(
                 BluetoothHeadset.VENDOR_SPECIFIC_HEADSET_EVENT_IPHONEACCEV,
@@ -252,9 +221,29 @@ public class AirPodsBatteryService extends Service {
         // assert: all elements of args are Serializable
         intent.putExtra(BluetoothHeadset.EXTRA_VENDOR_SPECIFIC_HEADSET_EVENT_ARGS, arguments);
         intent.putExtra(BluetoothDevice.EXTRA_DEVICE, device);
+        intent.putExtra(BluetoothDevice.EXTRA_NAME, device.getName());
         intent.addCategory(BluetoothHeadset.VENDOR_SPECIFIC_HEADSET_EVENT_COMPANY_ID_CATEGORY + "."
                 + Integer.toString(companyId));
-        sendBroadcastAsUser(intent, UserHandle.ALL, Manifest.permission.BLUETOOTH);
+        String[] permissions = new String[] {
+            Manifest.permission.BLUETOOTH,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.BLUETOOTH_PRIVILEGED,
+        };
+        sendBroadcastAsUserMultiplePermissions(intent, UserHandle.ALL, permissions);
+
+        AirPodsUtils.setModelMetaData(mContext, device);
+
+        if (isChanged == true) {
+            broadcastStatusChanges(intent);
+            isChanged = false;
+        }
+    }
+
+    // TODO: Fix non-protected broadcast from system error spam
+    private void broadcastStatusChanges(Intent intent) {
+        final Intent statusIntent = new Intent("batterywidget.impl.action.update_bluetooth_data").setPackage("com.google.android.settings.intelligence");
+        statusIntent.putExtra("android.bluetooth.device.action.BATTERY_LEVEL_CHANGED", intent);
+        sendBroadcastAsUser(statusIntent, UserHandle.ALL);
     }
 
 }
