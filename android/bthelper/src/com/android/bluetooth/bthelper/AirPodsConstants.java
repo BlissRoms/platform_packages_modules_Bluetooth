@@ -35,13 +35,16 @@ class AirPodsConstants {
     }
 
     static boolean shouldBeAirPods(BluetoothDevice device) {
-        for (ParcelUuid uuid : device.getUuids()) {
-            if (AirPodsConstants.UUIDS.contains(uuid)) {
-                return true;
+        try {
+            for (ParcelUuid uuid : device.getUuids()) {
+                if (AirPodsConstants.UUIDS.contains(uuid)) {
+                    return true;
+                }
             }
+            return false;
+        } catch (NullPointerException e) {
+            return false;
         }
-
-        return false;
     }
 
 }

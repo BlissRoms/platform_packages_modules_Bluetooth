@@ -27,10 +27,24 @@ public class AirPodsBatteryInitializer extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED.equals(intent.getAction())) {
-            final int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1);
-            final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-            handleA2dpStateChanged(context, state, device);
+        try {
+            if (intent == null) {
+                return;
+            }
+            String action = intent.getAction();
+            if (action == null) {
+                return;
+            }
+            if (BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED.equals(action)) {
+                final int state = intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1);
+                final BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                if (device == null) {
+                    return;
+                }
+                handleA2dpStateChanged(context, state, device);
+            }
+        } catch (NullPointerException e) {
+            return;
         }
     }
 
