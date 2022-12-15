@@ -18,5 +18,6 @@
     <privapp-permissions package="com.android.bluetooth.bthelper">
         <permission name="android.permission.BATTERY_STATS"/>
         <permission name="android.permission.BLUETOOTH_PRIVILEGED"/>
+        <permission name="android.permission.INTERACT_ACROSS_USERS"/>
     </privapp-permissions>
 </permissions>
