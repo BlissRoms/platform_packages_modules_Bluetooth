@@ -6,7 +6,7 @@ android_app {
 
     certificate: "platform",
 
-    jni_uses_platform_apis: true,
+    platform_apis: true,
     libs: [
         "framework-bluetooth-pre-jarjar",
         "unsupportedappusage",
@@ -23,9 +23,6 @@ android_app {
 
     system_ext_specific: true,
     privileged: true,
-
-    min_sdk_version: "Tiramisu",
-    sdk_version: "module_current",
 }
 
 prebuilt_etc {
