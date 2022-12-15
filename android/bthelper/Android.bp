@@ -17,6 +17,11 @@ android_app {
         "androidx.core_core",
     ],
 
+    resource_dirs: [
+        "res-airpods",
+        "res-beats",
+    ],
+
     required: [
         "com.android.bluetooth.bthelper.xml",
     ],
