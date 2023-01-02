@@ -93,8 +93,8 @@ public class AirPodsProGen2 {
         batteryCase = charging & 0xf;
         chargingCase = (charging & MASK_CHARGING_CASE) != 0;
 
-        usingLeft = (flags & MASK_USING_LEFT) != 0;
-        usingRight = (flags & MASK_USING_RIGHT) != 0;
+        usingLeft = (flags & (rightLeft == true ? MASK_USING_LEFT : MASK_USING_RIGHT)) != 0;
+        usingRight = (flags & (rightLeft == true ? MASK_USING_RIGHT : MASK_USING_LEFT)) != 0;
 
         if (chargingLeft == true
             && chargingRight == true) {
