@@ -467,9 +467,12 @@ static void a2dp_sbc_encode_frames(uint8_t nb_frame) {
     a2dp_sbc_encoder_cb.stats.media_read_total_expected_packets++;
 
     do {
-      /* Fill allocated buffer with 0 */
-      memset(a2dp_sbc_encoder_cb.pcmBuffer, 0,
+      /* Fill allocated buffer with 0 when residue data is not existing*/
+      if (a2dp_sbc_encoder_cb.feeding_state.aa_feed_residue == 0) {
+        memset(a2dp_sbc_encoder_cb.pcmBuffer, 0,
              blocm_x_subband * p_encoder_params->s16NumOfChannels);
+      }
+
       //
       // Read the PCM data and encode it. If necessary, upsample the data.
       //
