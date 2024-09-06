@@ -50,6 +50,8 @@ import static java.util.Objects.requireNonNullElseGet;
 import android.annotation.NonNull;
 import android.annotation.Nullable;
 import android.annotation.RequiresPermission;
+import android.app.AlarmManager;
+import android.app.AlarmManager.OnAlarmListener;
 import android.app.AppOpsManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -94,9 +96,12 @@ import android.bluetooth.State;
 import android.bluetooth.UidTraffic;
 import android.companion.CompanionDeviceManager;
 import android.content.AttributionSource;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.ContentObserver;
 import android.hardware.devicestate.DeviceStateManager;
 import android.net.MacAddress;
 import android.os.AsyncTask;
@@ -118,6 +123,7 @@ import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.os.UserManager;
 import android.provider.DeviceConfig;
+import android.provider.Settings;
 import android.sysprop.BluetoothProperties;
 import android.text.TextUtils;
 import android.util.Log;
@@ -187,6 +193,7 @@ import com.android.internal.annotations.GuardedBy;
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.modules.utils.BackgroundThread;
 import com.android.modules.utils.BytesMatcher;
+import com.android.modules.utils.HandlerExecutor;
 
 import libcore.util.SneakyThrow;
 
@@ -246,6 +253,9 @@ public class AdapterService extends Service {
     static final int BLUETOOTH_NAME_MAX_LENGTH_BYTES = 248;
 
     private static AdapterService sAdapterService;
+
+    // Settings.Global.BLUETOOTH_OFF_TIMEOUT
+    private static final String BLUETOOTH_OFF_TIMEOUT = "bluetooth_off_timeout";
 
     private final Object mEnergyInfoLock = new Object();
     private final SparseArray<UidTraffic> mUidTraffic = new SparseArray<>();
@@ -351,6 +361,7 @@ public class AdapterService extends Service {
     final List<Pair<Integer, BluetoothDevice>> mLeGattClientsControllingAutoActiveMode =
             new ArrayList<>();
 
+    private Context mContext;
     private BluetoothAdapter mAdapter;
     private AdapterProperties mAdapterProperties;
     private BondStateMachine mBondStateMachine;
@@ -440,6 +451,35 @@ public class AdapterService extends Service {
                 null);
     }
 
+    private final BroadcastReceiver mReceiver =
+            new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String action = intent.getAction();
+                    if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)
+                        || BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED.equals(action)) {
+                        setBluetoothTimeout();
+                    }
+                }
+            };
+
+    private final OnAlarmListener mBluetoothTimeoutListener = new OnAlarmListener() {
+        @Override
+        public void onAlarm() {
+            // Fetch adapter connection state synchronously and assume disconnected on error
+            if (mAdapter == null) return;
+            int adapterConnectionState = mAdapter.getConnectionState();
+
+            if (getState() == BluetoothAdapter.STATE_ON
+                && adapterConnectionState == BluetoothAdapter.STATE_DISCONNECTED) {
+                Log.i(TAG, "BT timeout, turning off adapter");
+                mHandler.post(() -> {
+                    mAdapterState.sendMessage(AdapterState.USER_TURN_OFF);
+                });
+            }
+        }
+    };
+
     @VisibleForTesting
     AdapterService(
             Looper looper,
@@ -519,6 +559,19 @@ public class AdapterService extends Service {
                     }
                     return false;
                 };
+    }
+
+    private void setBluetoothTimeout() {
+        if (mContext == null) return;
+        long bluetoothTimeoutMillis = Settings.Global.getLong(mContext.getContentResolver(),
+            BLUETOOTH_OFF_TIMEOUT, 0);
+        AlarmManager alarmManager = requireNonNull(getSystemService(AlarmManager.class));
+        alarmManager.cancel(mBluetoothTimeoutListener);
+        if (bluetoothTimeoutMillis != 0) {
+            final long timeout = SystemClock.elapsedRealtime() + bluetoothTimeoutMillis;
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, timeout,
+                TAG, new HandlerExecutor(mHandler), null, mBluetoothTimeoutListener);
+        }
     }
 
     <T> T syncPost(Supplier<T> supplier, T defaultValue) {
@@ -712,6 +765,7 @@ public class AdapterService extends Service {
         Log.d(TAG, "onCreate()");
         // OnCreate must perform the minimum of infallible and mandatory initialization
         // This is the first method call with a context attached
+        mContext = this;
         mUserManager = requireNonNull(getSystemService(UserManager.class));
         mAppOps = requireNonNull(getSystemService(AppOpsManager.class));
         mPowerManager = requireNonNull(getSystemService(PowerManager.class));
@@ -730,7 +784,23 @@ public class AdapterService extends Service {
         }
 
         setAdapterService(this);
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothAdapter.ACTION_CONNECTION_STATE_CHANGED);
+        filter.addAction(BluetoothAdapter.ACTION_STATE_CHANGED);
+        mContext.registerReceiver(mReceiver, filter, null, mHandler);
+
+        mContext.getContentResolver().registerContentObserver(Settings.Global.getUriFor(
+                BLUETOOTH_OFF_TIMEOUT), false, mBtTimeoutObserver);
     }
+
+    private final ContentObserver mBtTimeoutObserver =
+            new ContentObserver(null) {
+                @Override
+                public void onChange(boolean selfChange) {
+                    setBluetoothTimeout();
+                }
+            };
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -1591,6 +1661,10 @@ public class AdapterService extends Service {
 
         mMediaAudioServer.ifPresent(MediaAudioServer::cleanup);
         mMediaAudioServer = Optional.empty();
+
+        mContext.unregisterReceiver(mReceiver);
+
+        mContext.getContentResolver().unregisterContentObserver(mBtTimeoutObserver);
 
         mAdapterState.doQuit();
 
