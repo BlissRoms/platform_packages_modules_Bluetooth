@@ -503,7 +503,7 @@ final class BondStateMachine extends StateMachine {
             if (name == null) {
                 return false;
             }
-            if (name.equals(entry.first)
+            if (name != null && name.equals(entry.first)
                     && device.getBluetoothClass().getDeviceClass() == entry.second) {
                 return true;
             }
