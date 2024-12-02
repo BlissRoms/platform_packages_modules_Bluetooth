@@ -1319,6 +1319,12 @@ public class RemoteDevices {
                 removeAddressMapping(Utils.getAddressStringFromByte(address));
             }
             if (state == BluetoothAdapter.STATE_ON || state == BluetoothAdapter.STATE_TURNING_OFF) {
+                if(mHandler.hasMessages(MESSAGE_UUID_INTENT, device)) {
+                    warnLog(
+                            "aclStateChangeCallback: MESSAGE_UUID_INTENT is enqueued, address="
+                            + Utils.getRedactedAddressStringFromByte(address));
+                    mHandler.removeMessages(MESSAGE_UUID_INTENT, device);
+                }
                 mAdapterService.notifyAclDisconnected(device, transportLinkType);
                 intent = new Intent(BluetoothDevice.ACTION_ACL_DISCONNECTED);
                 intent.putExtra(BluetoothDevice.EXTRA_TRANSPORT, transportLinkType);
@@ -1597,7 +1603,7 @@ public class RemoteDevices {
 
         mSdpTracker.add(device);
 
-        Message message = mHandler.obtainMessage(MESSAGE_UUID_INTENT);
+        Message message = mHandler.obtainMessage(MESSAGE_UUID_INTENT, device);
         message.obj = device;
         message.arg1 = MESSAGE_UUID_STATUS_TIMEOUT;
         mHandler.sendMessageDelayed(message, UUID_INTENT_DELAY);
