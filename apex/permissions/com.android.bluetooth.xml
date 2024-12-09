@@ -17,6 +17,7 @@
 
 <permissions>
     <privapp-permissions package="com.android.bluetooth">
+        <permission name="android.permission.BLUETOOTH_CONNECT" />
         <permission name="android.permission.BLUETOOTH_PRIVILEGED" />
         <permission name="android.permission.CALL_PRIVILEGED" />
         <permission name="android.permission.CONNECTIVITY_INTERNAL" />
