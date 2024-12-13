@@ -16,6 +16,7 @@
 
 #include "hci/controller.h"
 
+#include <android-base/strings.h>
 #include <android_bluetooth_flags.h>
 #include <android-base/strings.h>
 

@@ -167,6 +167,13 @@ static void build_read_multi_rsp(tGATT_SR_CMD* p_cmd, uint16_t mtu) {
   uint8_t* p;
   bool is_overflow = false;
 
+  // We need at least one extra byte for the opcode
+  if (mtu == 0) {
+    LOG(ERROR) << "Invalid MTU";
+    p_cmd->status = GATT_ILLEGAL_PARAMETER;
+    return;
+  }
+
   len = sizeof(BT_HDR) + L2CAP_MIN_OFFSET + mtu;
   BT_HDR* p_buf = (BT_HDR*)osi_calloc(len);
   p_buf->offset = L2CAP_MIN_OFFSET;
@@ -210,7 +217,7 @@ static void build_read_multi_rsp(tGATT_SR_CMD* p_cmd, uint16_t mtu) {
 
       len = std::min((size_t) p_rsp->attr_value.len, mtu - total_len);
 
-      if (len == 0) {
+      if (total_len == mtu && p_rsp->attr_value.len > 0) {
         log::verbose("Buffer space not enough for this data item, skipping");
         break;
       }
@@ -753,6 +760,11 @@ void gatts_process_primary_service_req(tGATT_TCB& tcb, uint16_t cid,
 
   uint16_t payload_size = gatt_tcb_get_payload_size(tcb, cid);
 
+  // This can happen if the channel is already closed.
+  if (payload_size == 0) {
+    return;
+  }
+
   uint16_t msg_len =
       (uint16_t)(sizeof(BT_HDR) + payload_size + L2CAP_MIN_OFFSET);
   BT_HDR* p_msg = (BT_HDR*)osi_calloc(msg_len);
@@ -788,6 +800,12 @@ static void gatts_process_find_info(tGATT_TCB& tcb, uint16_t cid,
   }
 
   uint16_t payload_size = gatt_tcb_get_payload_size(tcb, cid);
+
+  // This can happen if the channel is already closed.
+  if (payload_size == 0) {
+    return;
+  }
+
   uint16_t buf_len =
       (uint16_t)(sizeof(BT_HDR) + payload_size + L2CAP_MIN_OFFSET);
 
@@ -928,6 +946,11 @@ static void gatts_process_read_by_type_req(tGATT_TCB& tcb, uint16_t cid,
   }
 
   uint16_t payload_size = gatt_tcb_get_payload_size(tcb, cid);
+
+  // This can happen if the channel is already closed.
+  if (payload_size == 0) {
+    return;
+  }
 
   size_t msg_len = sizeof(BT_HDR) + payload_size + L2CAP_MIN_OFFSET;
   BT_HDR* p_msg = (BT_HDR*)osi_calloc(msg_len);
@@ -1075,6 +1098,11 @@ static void gatts_process_read_req(tGATT_TCB& tcb, uint16_t cid,
                                    uint16_t handle, uint16_t len,
                                    uint8_t* p_data) {
   uint16_t payload_size = gatt_tcb_get_payload_size(tcb, cid);
+
+  // This can happen if the channel is already closed.
+  if (payload_size == 0) {
+    return;
+  }
 
   size_t buf_len = sizeof(BT_HDR) + payload_size + L2CAP_MIN_OFFSET;
   uint16_t offset = 0;
