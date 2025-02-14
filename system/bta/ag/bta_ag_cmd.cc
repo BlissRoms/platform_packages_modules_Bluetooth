@@ -1379,6 +1379,8 @@ void bta_ag_at_hfp_cback(tBTA_AG_SCB* p_scb, uint16_t cmd, uint8_t arg_type, cha
       }
 
       bta_ag_send_ok(p_scb);
+      log::info("Initiating codec negotiation");
+      p_scb->codec_updated = true;
       bta_ag_sco_open(p_scb, tBTA_AG_DATA::kEmpty);
       break;
     }
