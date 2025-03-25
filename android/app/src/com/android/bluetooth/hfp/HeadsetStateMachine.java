@@ -2137,10 +2137,11 @@ class HeadsetStateMachine extends StateMachine {
         if (mHeadsetService.isVirtualCallStarted()) {
             // In virtual call, send our phone number instead of remote phone number
             String phoneNumber = mSystemInterface.getSubscriberNumber();
-            if (phoneNumber == null) {
-                phoneNumber = "";
+            if (phoneNumber == null || phoneNumber == "") {
+                phoneNumber = "10000000";
             }
             int type = PhoneNumberUtils.toaFromString(phoneNumber);
+            Log.i(TAG, "processAtClcc: voip phoneNumber " + phoneNumber +" voip type " + type);
             mNativeInterface.clccResponse(device, 1, 0, 0, 0, false, phoneNumber, type);
             mNativeInterface.clccResponse(device, 0, 0, 0, 0, false, "", 0);
         } else if (hasMessages(CLCC_RSP_AFTER_VOIP_CALL_END)) {
