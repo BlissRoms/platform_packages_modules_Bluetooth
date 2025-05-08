@@ -967,6 +967,7 @@ static jboolean enableSwbNative(JNIEnv* env, jobject /* object */, jint swbCodec
   }
   bt_status_t ret = sBluetoothHfpInterface->EnableSwb(
           (bluetooth::headset::bthf_swb_codec_t)swbCodec, (bool)enable, (RawAddress*)addr);
+  env->ReleaseByteArrayElements(address, addr, 0);
   if (ret != BT_STATUS_SUCCESS) {
     log::error("Failed to {}", (enable ? "enable" : "disable"));
     return JNI_FALSE;

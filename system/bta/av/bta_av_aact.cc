@@ -1797,23 +1797,13 @@ void bta_av_setconfig_rej(tBTA_AV_SCB* p_scb, tBTA_AV_DATA* p_data) {
 
   tBTA_AV bta_av_data;
 
-  if (com::android::bluetooth::flags::bta_av_setconfig_rej_type_confusion()) {
-    bta_av_data = {
-        .reject =
-            {
-                .bd_addr = p_scb->PeerAddress(),
-                .hndl = p_scb->hndl,
-            },
-    };
-  } else {
-    bta_av_data = {
-        .reject =
-            {
-                .bd_addr = p_data->str_msg.bd_addr,
-                .hndl = p_scb->hndl,
-            },
-    };
-  }
+  bta_av_data = {
+    .reject =
+    {
+      .bd_addr = p_scb->PeerAddress(),
+      .hndl = p_scb->hndl,
+    },
+  };
 
   (*bta_av_cb.p_cback)(BTA_AV_REJECT_EVT, &bta_av_data);
 }

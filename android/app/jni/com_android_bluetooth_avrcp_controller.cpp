@@ -861,8 +861,7 @@ static void setPlayerApplicationSettingValuesNative(JNIEnv* env, jobject /* obje
     return;
   }
 
-  int i;
-  for (i = 0; i < num_attrib; ++i) {
+  for (int i = 0; i < num_attrib; ++i) {
     pAttrs[i] = (uint8_t)attr[i];
     pAttrsVal[i] = (uint8_t)attr_val[i];
   }
@@ -1047,12 +1046,6 @@ static void changeFolderPathNative(JNIEnv* env, jobject /* object */, jbyteArray
     return;
   }
 
-  // jbyte* uid = env->GetByteArrayElements(uidarr, NULL);
-  // if (!uid) {
-  //  jniThrowIOException(env, EINVAL);
-  //  return;
-  //}
-
   log::info("sBluetoothAvrcpInterface: {}", std::format_ptr(sBluetoothAvrcpInterface));
   RawAddress rawAddress;
   rawAddress.FromOctets((uint8_t*)addr);
@@ -1062,7 +1055,7 @@ static void changeFolderPathNative(JNIEnv* env, jobject /* object */, jbyteArray
   if (status != BT_STATUS_SUCCESS) {
     log::error("Failed sending changeFolderPathNative command, status: {}", bt_status_text(status));
   }
-  // env->ReleaseByteArrayElements(address, addr, 0);
+  env->ReleaseByteArrayElements(address, addr, 0);
 }
 
 static void setBrowsedPlayerNative(JNIEnv* env, jobject /* object */, jbyteArray address, jint id) {
@@ -1118,11 +1111,6 @@ static void playItemNative(JNIEnv* env, jobject /* object */, jbyteArray address
     return;
   }
 
-  //  jbyte* uid = env->GetByteArrayElements(uidArr, NULL);
-  //  if (!uid) {
-  //    jniThrowIOException(env, EINVAL);
-  //    return;
-  //  }
   RawAddress rawAddress;
   rawAddress.FromOctets((uint8_t*)addr);
 

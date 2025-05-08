@@ -1790,6 +1790,7 @@ static void gattClientScanFilterAddNative(JNIEnv* env, jobject /* object */, jin
       for (int j = 0; j < len; j++) {
         curr.irk[j] = irkBytes[j];
       }
+      env->ReleaseByteArrayElements(irkByteArray.get(), irkBytes, JNI_ABORT);
     }
 
     ScopedLocalRef<jobject> uuid(env, env->GetObjectField(current.get(), uuidFid));
@@ -2000,6 +2001,7 @@ static void gattClientMsftAdvMonitorAddNative(JNIEnv* env, jobject /* object*/,
       for (int j = 0; j < env->GetArrayLength(patternByteArray.get()); j++) {
         native_msft_adv_monitor_pattern.pattern.push_back(patternBytes[j]);
       }
+      env->ReleaseByteArrayElements(patternByteArray.get(), patternBytes, 0);
     }
 
     patterns.push_back(native_msft_adv_monitor_pattern);

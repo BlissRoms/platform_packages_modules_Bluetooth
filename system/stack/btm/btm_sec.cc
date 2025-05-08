@@ -3485,7 +3485,7 @@ void btm_sec_encryption_change_evt(uint16_t handle, tHCI_STATUS status, uint8_t 
   if (com::android::bluetooth::flags::disconnect_on_encryption_failure()) {
     if (status != HCI_SUCCESS && encr_enable == 0) {
       log::error("Encryption failure {}, disconnecting {}", status, handle);
-      btm_sec_disconnect(handle, HCI_ERR_AUTH_FAILURE,
+      btm_sec_disconnect(handle, status,
                          "stack::btu::btu_hcif::encryption_change_evt Encryption Failure");
     }
   }

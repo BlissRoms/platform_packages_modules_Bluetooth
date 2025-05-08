@@ -445,6 +445,8 @@ static jboolean connectNative(JNIEnv* env, jobject /* thiz */, jbyteArray addres
 
   bt_status_t ret = sHiddIf->connect((RawAddress*)addr);
 
+  env->ReleaseByteArrayElements(address, addr, 0);
+
   log::verbose("connect() returned {}", bt_status_text(ret));
 
   if (ret == BT_STATUS_SUCCESS) {

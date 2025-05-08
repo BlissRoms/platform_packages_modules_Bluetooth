@@ -1954,16 +1954,14 @@ void smp_process_secure_connection_oob_data(tSMP_CB* p_cb, tSMP_INT_DATA* /* p_d
     p_cb->local_random = {0};
   }
 
-  if (com::android::bluetooth::flags::btsec_le_oob_pairing()) {
-    if (p_cb->peer_oob_flag == SMP_OOB_PRESENT && !p_sc_oob_data->loc_oob_data.present) {
-      log::warn(
-              "local OOB data is not present but peer claims to have received it; dropping "
-              "connection");
-      tSMP_INT_DATA smp_int_data{};
-      smp_int_data.status = SMP_OOB_FAIL;
-      smp_sm_event(p_cb, SMP_AUTH_CMPL_EVT, &smp_int_data);
-      return;
-    }
+  if (p_cb->peer_oob_flag == SMP_OOB_PRESENT && !p_sc_oob_data->loc_oob_data.present) {
+    log::warn(
+            "local OOB data is not present but peer claims to have received it; dropping "
+            "connection");
+    tSMP_INT_DATA smp_int_data{};
+    smp_int_data.status = SMP_OOB_FAIL;
+    smp_sm_event(p_cb, SMP_AUTH_CMPL_EVT, &smp_int_data);
+    return;
   }
 
   if (!p_sc_oob_data->peer_oob_data.present) {
