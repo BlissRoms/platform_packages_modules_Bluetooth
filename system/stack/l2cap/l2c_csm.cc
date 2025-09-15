@@ -376,18 +376,11 @@ static void l2c_csm_closed(tL2C_CCB* p_ccb, tL2CEVT event, void* p_data) {
       /* Wait for the info resp in this state before sending connect req (if
        * needed) */
       if (!p_ccb->p_lcb->w4_info_rsp) {
-        /* Need to have at least one compatible channel to continue */
-        if (!l2c_fcr_chk_chan_modes(p_ccb)) {
-          l2cu_release_ccb(p_ccb);
-          (*p_ccb->p_rcb->api.pL2CA_Error_Cb)(
-                  local_cid, static_cast<uint16_t>(tL2CAP_CONN::L2CAP_CONN_OTHER_ERROR));
-          bluetooth::metrics::Counter(
-                  bluetooth::metrics::CounterKey::L2CAP_NO_COMPATIBLE_CHANNEL_AT_CSM_CLOSED);
-        } else {
-          l2cu_send_peer_connect_req(p_ccb);
-          alarm_set_on_mloop(p_ccb->l2c_ccb_timer, L2CAP_CHNL_CONNECT_TIMEOUT_MS,
-                             l2c_ccb_timer_timeout, p_ccb);
-        }
+        /* Use basic mode if no compatible channel found */
+        l2c_fcr_chk_chan_modes(p_ccb);
+        l2cu_send_peer_connect_req(p_ccb);
+        alarm_set_on_mloop(p_ccb->l2c_ccb_timer, L2CAP_CHNL_CONNECT_TIMEOUT_MS,
+                            l2c_ccb_timer_timeout, p_ccb);
       }
       break;
 
@@ -518,18 +511,11 @@ static void l2c_csm_orig_w4_sec_comp(tL2C_CCB* p_ccb, tL2CEVT event, void* p_dat
         l2cble_credit_based_conn_req(p_ccb); /* Start Connection     */
       } else {
         if (!p_ccb->p_lcb->w4_info_rsp) {
-          /* Need to have at least one compatible channel to continue */
-          if (!l2c_fcr_chk_chan_modes(p_ccb)) {
-            l2cu_release_ccb(p_ccb);
-            (*p_ccb->p_rcb->api.pL2CA_Error_Cb)(
-                    local_cid, static_cast<uint16_t>(tL2CAP_CONN::L2CAP_CONN_OTHER_ERROR));
-            bluetooth::metrics::Counter(
-                    bluetooth::metrics::CounterKey::L2CAP_NO_COMPATIBLE_CHANNEL_AT_W4_SEC);
-          } else {
-            alarm_set_on_mloop(p_ccb->l2c_ccb_timer, L2CAP_CHNL_CONNECT_TIMEOUT_MS,
-                               l2c_ccb_timer_timeout, p_ccb);
-            l2cu_send_peer_connect_req(p_ccb); /* Start Connection     */
-          }
+          /* Use basic mode if no compatible channel found */
+          l2c_fcr_chk_chan_modes(p_ccb);
+          alarm_set_on_mloop(p_ccb->l2c_ccb_timer, L2CAP_CHNL_CONNECT_TIMEOUT_MS,
+                              l2c_ccb_timer_timeout, p_ccb);
+          l2cu_send_peer_connect_req(p_ccb); /* Start Connection     */
         }
       }
       break;
@@ -868,19 +854,12 @@ static void l2c_csm_w4_l2cap_connect_rsp(tL2C_CCB* p_ccb, tL2CEVT event, void* p
       break;
 
     case L2CEVT_L2CAP_INFO_RSP:
-      /* Need to have at least one compatible channel to continue */
-      if (!l2c_fcr_chk_chan_modes(p_ccb)) {
-        l2cu_release_ccb(p_ccb);
-        (*p_ccb->p_rcb->api.pL2CA_Error_Cb)(
-                local_cid, static_cast<uint16_t>(tL2CAP_CONN::L2CAP_CONN_OTHER_ERROR));
-        bluetooth::metrics::Counter(
-                bluetooth::metrics::CounterKey::L2CAP_INFO_NO_COMPATIBLE_CHANNEL_AT_RSP);
-      } else {
-        /* We have feature info, so now send peer connect request */
-        alarm_set_on_mloop(p_ccb->l2c_ccb_timer, L2CAP_CHNL_CONNECT_TIMEOUT_MS,
-                           l2c_ccb_timer_timeout, p_ccb);
-        l2cu_send_peer_connect_req(p_ccb); /* Start Connection     */
-      }
+      /* Use basic mode if no compatible channel found */
+      l2c_fcr_chk_chan_modes(p_ccb);
+      /* We have feature info, so now send peer connect request */
+      alarm_set_on_mloop(p_ccb->l2c_ccb_timer, L2CAP_CHNL_CONNECT_TIMEOUT_MS,
+                          l2c_ccb_timer_timeout, p_ccb);
+      l2cu_send_peer_connect_req(p_ccb); /* Start Connection     */
       break;
 
     default:
