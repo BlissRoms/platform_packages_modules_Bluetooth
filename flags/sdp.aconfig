@@ -7,3 +7,13 @@ flag {
     description: "Check for NIL SDP property length"
     bug: "329171845"
 }
+
+flag {
+    name: "call_sdp_free_in_main_thread"
+    namespace: "bluetooth"
+    description: "Free SDP service in main thread instead of management thread"
+    bug: "415917037"
+    metadata {
+        purpose: PURPOSE_BUGFIX
+    }
+}

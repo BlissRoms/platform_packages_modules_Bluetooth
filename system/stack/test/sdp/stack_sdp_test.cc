@@ -482,3 +482,29 @@ TEST_F(StackSdpInitTest, SDP_Dumpsys_ccb) {
 
   SDP_Dumpsys(1);
 }
+
+TEST_F(StackSdpInitTest, sdp_cancel_pending_conn) {
+  EXPECT_CALL(mock_stack_l2cap_interface_, L2CA_ConnectReqWithSecurity(_, _, _))
+          .WillOnce(Invoke([](uint16_t /* psm */, const RawAddress& /* p_bd_addr */,
+                              uint16_t /* sec_level */) -> uint16_t {
+            return L2CA_ConnectReqWithSecurity_cid;
+          }));
+  EXPECT_CALL(mock_stack_l2cap_interface_, L2CA_DisconnectReq(_)).WillOnce(Return(true));
+
+  ASSERT_TRUE(SDP_ServiceSearchRequest(addr, sdp_db, nullptr));
+  const int cid = L2CA_ConnectReqWithSecurity_cid;
+  tCONN_CB* p_ccb1 = find_ccb(cid, tSDP_STATE::CONN_SETUP);
+  ASSERT_NE(p_ccb1, nullptr);
+  ASSERT_EQ(p_ccb1->con_state, tSDP_STATE::CONN_SETUP);
+
+  ASSERT_TRUE(SDP_ServiceSearchRequest(addr, sdp_db, nullptr));
+  tCONN_CB* p_ccb2 = find_ccb(cid, tSDP_STATE::CONN_PEND);
+  ASSERT_NE(p_ccb2, nullptr);
+  ASSERT_NE(p_ccb2, p_ccb1);
+  ASSERT_EQ(p_ccb2->con_state, tSDP_STATE::CONN_PEND);
+
+  // Cancel CCB that is pending connection, expect both CCBs to be idle
+  sdp_disconnect(p_ccb2, tSDP_STATUS::SDP_CANCEL);
+  ASSERT_EQ(p_ccb1->con_state, tSDP_STATE::IDLE);
+  ASSERT_EQ(p_ccb2->con_state, tSDP_STATE::IDLE);
+}
