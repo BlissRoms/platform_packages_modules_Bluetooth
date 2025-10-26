@@ -349,10 +349,19 @@ bool MessageLoopThread::EnableRealTimeScheduling() {
   struct sched_param rt_params = {.sched_priority = kRealTimeFifoSchedulingPriority};
   int rc = sched_setscheduler(linux_tid_, SCHED_FIFO, &rt_params);
   if (rc != 0) {
-    log::error("unable to set SCHED_FIFO priority {} for linux_tid {}, thread {}, error: {}",
-               kRealTimeFifoSchedulingPriority, linux_tid_, *this, strerror(errno));
+    int err = errno;
+    if (err == EPERM || err == EINVAL) {
+      log::warn("SCHED_FIFO unsupported or not permitted on this device for thread {} (tid {}), "
+                "continuing with normal scheduling: {}",
+                *this, linux_tid_, strerror(err));
+      return true;
+    }
+
+    log::error("unexpected sched_setscheduler() failure: {}", strerror(err));
     return false;
   }
+
+  log::info("enabled SCHED_FIFO priority {} for thread {}", kRealTimeFifoSchedulingPriority, *this);
   return true;
 }
 
