@@ -160,8 +160,6 @@ alarm_t* alarm_new_periodic(const char* name) { return alarm_new_internal(name, 
 static alarm_t* alarm_new_internal(const char* name, bool is_periodic) {
   // Make sure we have a list we can insert alarms into.
   if (!alarms && !lazy_initialize()) {
-    log::fatal("initialization failed");  // if initialization failed, we
-                                          // should not continue
     return NULL;
   }
 
