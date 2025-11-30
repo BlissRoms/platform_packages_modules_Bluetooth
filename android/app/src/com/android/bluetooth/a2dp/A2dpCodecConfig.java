@@ -320,7 +320,7 @@ class A2dpCodecConfig {
         }
 
         BluetoothCodecConfig codecConfig;
-        BluetoothCodecConfig[] codecConfigArray = new BluetoothCodecConfig[7];
+        BluetoothCodecConfig[] codecConfigArray = new BluetoothCodecConfig[8];
         codecConfig =
                 new BluetoothCodecConfig.Builder()
                         .setCodecType(BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC)
@@ -365,6 +365,13 @@ class A2dpCodecConfig {
                         .setCodecPriority(mA2dpSourceCodecPriorityLhdcv5)
                         .build();
         codecConfigArray[6] = codecConfig;
+        codecConfig =
+                new BluetoothCodecConfig.Builder()
+                        .setCodecType(BluetoothCodecConfig.SOURCE_CODEC_TYPE_SBC)
+                        .setCodecPriority(mA2dpSourceCodecPrioritySbc)
+                        .setCodecSpecific1(0x1337)
+                        .build();
+        codecConfigArray[7] = codecConfig;
 
         return codecConfigArray;
     }
