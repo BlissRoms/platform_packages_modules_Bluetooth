@@ -598,6 +598,15 @@ static void process_service_search_attr_rsp(tCONN_CB* p_ccb, uint8_t* p_reply,
     uint8_t* p;
     uint16_t bytes_left = SDP_DATA_BUF_SIZE;
 
+    /* If we don't have a valid discovery database, we can't do anything. */
+    if (p_ccb->p_db == NULL) {
+      log::warn(
+          "Attempted continuation or first time request with invalid discovery "
+          "database");
+      sdp_disconnect(p_ccb, tSDP_STATUS::SDP_INVALID_CONT_STATE);
+      return;
+    }
+
     p_msg->offset = L2CAP_MIN_OFFSET;
     p = p_start = (uint8_t*)(p_msg + 1) + L2CAP_MIN_OFFSET;
 
@@ -836,6 +845,11 @@ static uint8_t* add_attr(uint8_t* p, uint8_t* p_end, tSDP_DISCOVERY_DB* p_db,
   uint8_t is_additional_list = nest_level & SDP_ADDITIONAL_LIST_MASK;
 
   nest_level &= ~(SDP_ADDITIONAL_LIST_MASK);
+
+  if (p + sizeof(uint8_t) > p_end) {
+    log::warn("bad arguments to add_addr", __func__);
+    return NULL;
+  }
 
   type = *p++;
   p = sdpu_get_len_from_type(p, p_end, type, &attr_len);
