@@ -1507,9 +1507,12 @@ public class AdapterService extends Service {
 
         mDatabaseManager.cleanup();
 
-        mContext.unregisterReceiver(mReceiver);
+        // mContext is null when onCreate() took the early-return path, so guard the teardown.
+        if (mContext != null) {
+            mContext.unregisterReceiver(mReceiver);
 
-        mContext.getContentResolver().unregisterContentObserver(mBtTimeoutObserver);
+            mContext.getContentResolver().unregisterContentObserver(mBtTimeoutObserver);
+        }
 
         if (mAdapterStateMachine != null) {
             mAdapterStateMachine.doQuit();
