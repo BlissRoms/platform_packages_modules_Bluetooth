@@ -1662,9 +1662,12 @@ public class AdapterService extends Service {
         mMediaAudioServer.ifPresent(MediaAudioServer::cleanup);
         mMediaAudioServer = Optional.empty();
 
-        mContext.unregisterReceiver(mReceiver);
+        // mContext is null when onCreate() took the early-return path, so guard the teardown.
+        if (mContext != null) {
+            mContext.unregisterReceiver(mReceiver);
 
-        mContext.getContentResolver().unregisterContentObserver(mBtTimeoutObserver);
+            mContext.getContentResolver().unregisterContentObserver(mBtTimeoutObserver);
+        }
 
         mAdapterState.doQuit();
 
