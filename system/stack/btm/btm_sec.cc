@@ -3337,6 +3337,20 @@ void btm_sec_encrypt_change(uint16_t handle, tHCI_STATUS status, uint8_t encr_en
   btm_sec_check_pending_enc_req(p_dev_rec, transport, encr_enable != HCI_ENCRYPT_MODE_DISABLED);
 
   if (!from_key_refresh) {
+    if (encr_enable == HCI_ENCRYPT_MODE_ON) {
+      // Claiming HCI_ENCRYPT_MODE_ON while using BR/EDR transport implies using E0 encryption.
+      // If the stored properties indicate that we should be using AES-CCM (i.e. that we were using
+      // Secure Connections mode previously), then this is a downgrade.
+      if (transport == BT_TRANSPORT_BR_EDR) {
+        if (btm_sec_is_enc_algo_downgrade(handle, 0, 0)) {
+          acl_set_disconnect_reason(HCI_ERR_HOST_REJECT_SECURITY);
+          btm_sec_send_hci_disconnect(p_dev_rec, HCI_ERR_AUTH_FAILURE, handle,
+                                      "attempted to downgrade from Secure Connections mode");
+          return;
+        }
+      }
+    }
+
     bta_dm_on_encryption_change(bt_encryption_change_evt{p_dev_rec->bd_addr, status,
                                                          (bool)encr_enable, key_size, transport,
                                                          p_dev_rec->SupportsSecureConnections()});
@@ -3432,17 +3446,6 @@ void btm_sec_encrypt_change(uint16_t handle, tHCI_STATUS status, uint8_t encr_en
   }
 }
 
-constexpr int MIN_KEY_SIZE = 7;
-constexpr int MIN_KEY_SIZE_DEFAULT = MIN_KEY_SIZE;
-constexpr int MAX_KEY_SIZE = 16;
-static uint8_t get_min_enc_key_size() {
-  static uint8_t min_key_size = (uint8_t)std::min(
-          std::max(android::sysprop::bluetooth::Gap::min_key_size().value_or(MIN_KEY_SIZE_DEFAULT),
-                   MIN_KEY_SIZE),
-          MAX_KEY_SIZE);
-  return min_key_size;
-}
-
 static void read_encryption_key_size_complete_after_encryption_change(uint8_t status,
                                                                       uint16_t handle,
                                                                       uint8_t key_size) {
@@ -3462,7 +3465,7 @@ static void read_encryption_key_size_complete_after_encryption_change(uint8_t st
     return;
   }
 
-  if (key_size < get_min_enc_key_size()) {
+  if (key_size < btm_sec_get_min_enc_key_size()) {
     log::error("encryption key too short, disconnecting. handle:0x{:x},key_size:{}", handle,
                key_size);
 
@@ -4051,7 +4054,7 @@ static void read_encryption_key_size_complete_after_key_refresh(uint8_t status, 
     return;
   }
 
-  if (key_size < get_min_enc_key_size()) {
+  if (key_size < btm_sec_get_min_enc_key_size()) {
     log::error("encryption key too short, disconnecting. handle: 0x{:x} key_size {}", handle,
                key_size);
 
@@ -5281,4 +5284,12 @@ void btm_sec_set_peer_sec_caps(uint16_t hci_handle, bool ssp_supported, bool hos
 
   p_dev_rec->remote_supports_bredr = br_edr_supported;
   p_dev_rec->remote_supports_ble = le_supported;
+}
+
+uint8_t btm_sec_get_min_enc_key_size() {
+  static uint8_t min_key_size = (uint8_t)std::min(
+          std::max(android::sysprop::bluetooth::Gap::min_key_size().value_or(MIN_KEY_SIZE_DEFAULT),
+                   MIN_KEY_SIZE),
+          MAX_KEY_SIZE);
+  return min_key_size;
 }
